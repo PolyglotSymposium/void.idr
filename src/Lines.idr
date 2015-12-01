@@ -45,3 +45,9 @@ deleteLine FZ (str :: strs) = strs
 deleteLine {k = Z} (FS i) _ = absurd i
 deleteLine {k = S j} (FS i) (str :: strs) = str :: deleteLine i strs
 
+insertLine : {v : Vect k Nat} -> (i : Fin (S k)) -> (s: SizedString n) -> Lines v ->
+             Lines (insertAt i n v)
+insertLine FZ s ls = s :: ls
+insertLine (FS y) s [] = absurd y
+insertLine (FS y) s (str :: ls) = str :: insertLine y s ls
+

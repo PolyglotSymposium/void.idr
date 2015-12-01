@@ -100,8 +100,8 @@ moveByLine (Cursor' rowCursor columnCursor prevColumn) movement =
   let newRowCursor = moveRowCursorByLine rowCursor movement
   in Cursor' newRowCursor (adjustColumnCursor prevColumn) prevColumn
 
-tighten : Fin (S (S n)) -> Fin (S n)
-tighten x =
+crimp : Fin (S (S n)) -> Fin (S n)
+crimp x =
   case (strengthen x) of
        Left _ => last
        Right x' => x'
@@ -110,5 +110,10 @@ deleteLine : {size : Vect (S (S k)) Nat} ->
             (cursor : Cursor size) ->
              Cursor (deleteAt (currentRowIndex cursor) size)
 deleteLine (Cursor' rowCursor columnCursor prevColumn) =
-  Cursor' (tighten rowCursor) (adjustColumnCursor prevColumn) prevColumn
+  Cursor' (crimp rowCursor) (adjustColumnCursor prevColumn) prevColumn
+
+insertLine : (n : Nat) -> (cursor : Cursor size) -> 
+             Cursor (insertAt (weaken (currentRowIndex cursor)) n size)
+insertLine n (Cursor' rowCursor columnCursor prevColumn) =
+  Cursor' (weaken rowCursor) (adjustColumnCursor prevColumn) prevColumn
 

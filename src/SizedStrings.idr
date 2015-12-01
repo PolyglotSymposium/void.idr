@@ -18,6 +18,9 @@ abstract data SizedString : Nat -> Type where
 sizeString : (s : String) -> SizedString (length s)
 sizeString s = SizedString' (length s) s
 
+empty : SizedString Z
+empty = sizeString ""
+
 ||| Length of the string, equal to the Nat carried in the type
 length : SizedString n -> Nat
 length {n} _ = n

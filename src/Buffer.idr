@@ -66,3 +66,12 @@ deleteLine {k = (S _)} (Buffer' ls cursor) =
       newCursor = deleteLine cursor
   in Buffer' newLines newCursor
 
+bufferTypeFromLineInsert : {size : Vect (S k) Nat} -> Buffer size -> Type
+bufferTypeFromLineInsert {size} (Buffer' _ cursor) =
+  Buffer (insertAt (weaken $ currentRowIndex cursor) Z size)
+
+insertLineAbove : (b : Buffer size) -> bufferTypeFromLineInsert b
+insertLineAbove (Buffer' ls cursor) =
+  let newLines = insertLine (weaken $ currentRowIndex cursor) empty ls
+      newCursor = insertLine Z cursor
+  in Buffer' newLines newCursor
