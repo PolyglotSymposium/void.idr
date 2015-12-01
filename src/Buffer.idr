@@ -28,7 +28,7 @@ bufferTypeFromStrings (x :: xs) = Buffer $ listSizeVector (x :: xs)
 
 readIntoBuffer : (xs: List String) -> bufferTypeFromStrings xs
 readIntoBuffer [] = emptyBuffer
-readIntoBuffer (x :: xs) = Buffer' (readFromList $ x :: xs) zeroRowCursor
+readIntoBuffer (x :: xs) = Buffer' (readFromList $ x :: xs) zeroColumnCursor
 
 writeToList : Buffer v -> List String
 writeToList (Buffer' l _) = writeLinesToList l
@@ -53,4 +53,16 @@ charUnderCursor (Buffer' lines cursor) =
   let line = index (currentRowIndex cursor) lines
       maybeColIndex = currentColumnIndex cursor
   in map (strIndex line) maybeColIndex
+
+bufferTypeFromLineDelete : {size : Vect (S k) Nat} -> Buffer size -> Type
+bufferTypeFromLineDelete {k = Z} _ = Buffer [Z]
+bufferTypeFromLineDelete {k = (S _)} {size} (Buffer' _ cursor) =
+  Buffer (deleteAt (currentRowIndex cursor) size)
+
+deleteLine : {size : Vect (S k) Nat} -> (b : Buffer size) -> bufferTypeFromLineDelete b
+deleteLine {k = Z} _ = emptyBuffer
+deleteLine {k = (S _)} (Buffer' ls cursor) =
+  let newLines = deleteLine (currentRowIndex cursor) ls
+      newCursor = deleteLine cursor
+  in Buffer' newLines newCursor
 

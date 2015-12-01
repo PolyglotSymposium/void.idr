@@ -9,38 +9,38 @@ import Movement
 %access public
 
 private
-data RowCursor : Nat -> Type where
-  EmptyRowCursor : RowCursor Z
-  RowCursor' : Fin (S k) -> RowCursor (S k)
+data ColumnCursor : Nat -> Type where
+  EmptyCursor : ColumnCursor Z
+  ColumnCursor' : Fin (S k) -> ColumnCursor (S k)
 
 private
-zeroRowCursor' : (n : Nat) -> RowCursor n
-zeroRowCursor' Z = EmptyRowCursor
-zeroRowCursor' (S k) = RowCursor' FZ
+zeroColumnCursor' : (n : Nat) -> ColumnCursor n
+zeroColumnCursor' Z = EmptyCursor
+zeroColumnCursor' (S k) = ColumnCursor' FZ
 
 private
-rowCursorToNat : RowCursor n -> Nat
-rowCursorToNat EmptyRowCursor = Z
-rowCursorToNat (RowCursor' x) = finToNat x
+rowCursorToNat : ColumnCursor n -> Nat
+rowCursorToNat EmptyCursor = Z
+rowCursorToNat (ColumnCursor' x) = finToNat x
 
 private
-rowCursorToMaybeFin : RowCursor n -> Maybe (Fin n)
-rowCursorToMaybeFin EmptyRowCursor = Nothing
-rowCursorToMaybeFin (RowCursor' x) = Just x
+rowCursorToMaybeFin : ColumnCursor n -> Maybe (Fin n)
+rowCursorToMaybeFin EmptyCursor = Nothing
+rowCursorToMaybeFin (ColumnCursor' x) = Just x
 
 abstract
 data Cursor : Vect (S lastRow) Nat -> Type where
   Cursor' : {size : Vect (S lastRow) Nat} ->
             (rowCursor : Fin (S lastRow)) ->
-            (colCursor : RowCursor (index rowCursor size)) ->
+            (colCursor : ColumnCursor (index rowCursor size)) ->
             (prevColumn : Nat) ->
             Cursor size
 
 emptyBufferCursor : Cursor [Z]
-emptyBufferCursor = Cursor' FZ EmptyRowCursor Z
+emptyBufferCursor = Cursor' FZ EmptyCursor Z
 
-zeroRowCursor : Cursor size
-zeroRowCursor {size} = Cursor' FZ (zeroRowCursor' $ index FZ size) Z
+zeroColumnCursor : Cursor size
+zeroColumnCursor {size} = Cursor' FZ (zeroColumnCursor' $ index FZ size) Z
 
 currentRowIndex : {size : Vect (S lastRow) Nat} -> Cursor size -> Fin (S lastRow)
 currentRowIndex (Cursor' rowIndex _ _) = rowIndex
@@ -66,10 +66,10 @@ moveCursorForward x (S k) =
        Right x' => moveCursorForward (FS x') k
 
 private
-moveByCharInLine : RowCursor n -> Move ByCharacter -> RowCursor n 
-moveByCharInLine EmptyRowCursor y = EmptyRowCursor
-moveByCharInLine (RowCursor' x) (Backward k) = RowCursor' $ moveCursorBackward x k
-moveByCharInLine (RowCursor' x) (Forward k) = RowCursor' $ moveCursorForward x k
+moveByCharInLine : ColumnCursor n -> Move ByCharacter -> ColumnCursor n 
+moveByCharInLine EmptyCursor y = EmptyCursor
+moveByCharInLine (ColumnCursor' x) (Backward k) = ColumnCursor' $ moveCursorBackward x k
+moveByCharInLine (ColumnCursor' x) (Forward k) = ColumnCursor' $ moveCursorForward x k
 
 moveByChar : Cursor v -> Move ByCharacter -> Cursor v
 moveByChar (Cursor' rowCursor columnCursor _) movement =
@@ -84,9 +84,9 @@ adjustColumnIndex {n} prevColumn =
        Just x => x
 
 private
-adjustColumnCursor : Nat -> RowCursor n
-adjustColumnCursor {n = Z} _ = EmptyRowCursor
-adjustColumnCursor {n = (S j)} k = RowCursor' $ adjustColumnIndex k
+adjustColumnCursor : Nat -> ColumnCursor n
+adjustColumnCursor {n = Z} _ = EmptyCursor
+adjustColumnCursor {n = (S j)} k = ColumnCursor' $ adjustColumnIndex k
 
 private
 moveRowCursorByLine : Fin (S n) -> Move ByLine -> Fin (S n)
@@ -99,4 +99,16 @@ moveByLine : Cursor v -> Move ByLine -> Cursor v
 moveByLine (Cursor' rowCursor columnCursor prevColumn) movement =
   let newRowCursor = moveRowCursorByLine rowCursor movement
   in Cursor' newRowCursor (adjustColumnCursor prevColumn) prevColumn
+
+tighten : Fin (S (S n)) -> Fin (S n)
+tighten x =
+  case (strengthen x) of
+       Left _ => last
+       Right x' => x'
+
+deleteLine : {size : Vect (S (S k)) Nat} ->
+            (cursor : Cursor size) ->
+             Cursor (deleteAt (currentRowIndex cursor) size)
+deleteLine (Cursor' rowCursor columnCursor prevColumn) =
+  Cursor' (tighten rowCursor) (adjustColumnCursor prevColumn) prevColumn
 

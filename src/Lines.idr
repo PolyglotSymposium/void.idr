@@ -40,3 +40,8 @@ writeLinesToList : Lines v -> List String
 writeLinesToList [] = []
 writeLinesToList (l :: ls) = cast l :: writeLinesToList ls
 
+deleteLine : {v : Vect (S k) Nat} -> (i : Fin (S k)) -> Lines v -> Lines (deleteAt i v)
+deleteLine FZ (str :: strs) = strs
+deleteLine {k = Z} (FS i) _ = absurd i
+deleteLine {k = S j} (FS i) (str :: strs) = str :: deleteLine i strs
+
