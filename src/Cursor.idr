@@ -3,18 +3,10 @@ module Cursor
 import Data.Fin
 import Data.Vect
 
+import Movement
+
 %default total
 %access public
-
-data By =
-  ByCharacter
-  | ByLine
-
-data Move : By -> Type where
-  Backward : {by : By} -> Nat -> Move by
-  Forward : {by : By} -> Nat -> Move by
-
-%name Move movement
 
 private
 data RowCursor : Nat -> Type where
@@ -103,10 +95,8 @@ moveRowCursorByLine rowCursor (Backward k) =
 moveRowCursorByLine rowCursor (Forward k) =
   moveCursorForward rowCursor k
 
-
 moveByLine : Cursor v -> Move ByLine -> Cursor v
 moveByLine (Cursor' rowCursor columnCursor prevColumn) movement =
   let newRowCursor = moveRowCursorByLine rowCursor movement
   in Cursor' newRowCursor (adjustColumnCursor prevColumn) prevColumn
-
 

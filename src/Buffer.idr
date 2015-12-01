@@ -5,6 +5,7 @@ import Data.Vect
 import SizedStrings
 import Lines
 import Cursor
+import Movement
 
 %default total
 %access public
@@ -52,16 +53,4 @@ charUnderCursor (Buffer' lines cursor) =
   let line = index (currentRowIndex cursor) lines
       maybeColIndex = currentColumnIndex cursor
   in map (strIndex line) maybeColIndex
-
-h : Nat -> Move ByCharacter
-h x = Backward x
-
-j : Nat -> Move ByLine
-j x = Forward x
-
-l : Nat -> Move ByCharacter
-l x = Forward x
-
-k : Nat -> Move ByLine
-k x = Backward x
 
