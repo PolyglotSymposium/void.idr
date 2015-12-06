@@ -40,3 +40,13 @@ strIndex (SizedString' _ s) x =
 instance Cast (SizedString n) String where
   cast (SizedString' _ s) = s
 
+replaceAt : Fin (S n) -> Char -> SizedString (S n) -> SizedString (S n)
+replaceAt {n} i c (SizedString' _ str) =
+  let charsBefore = finToNat i
+      indexAfter = S charsBefore
+      size = S n
+      firstChunk = substr 0 charsBefore str
+      secondChunk = substr indexAfter size str
+  in SizedString' size $ firstChunk ++ (strCons c $ secondChunk)
+
+
