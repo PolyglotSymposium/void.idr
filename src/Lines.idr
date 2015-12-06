@@ -12,9 +12,20 @@ data Lines : Vect k Nat -> Type where
   Nil : Lines []
   (::) : SizedString n -> Lines v -> Lines (n :: v)
 
+%name Lines linez -- so as to avoid confusion with lines function
+
 index : {v : Vect k Nat} -> (i : Fin k) -> Lines v -> SizedString (index i v)
 index FZ (x :: xs) = x
 index (FS y) (x :: xs) = index y xs
+
+replaceAt : { size : Vect (S k) Nat } ->
+           (i : Fin (S k)) ->
+           SizedString (index i size) -> 
+           Lines size ->
+           Lines size
+replaceAt FZ     str (x::xs) = str :: xs
+replaceAt (FS i) str (x::[]) = absurd i
+replaceAt (FS i) str (x::(y :: z)) = x :: replaceAt i str (y :: z)
 
 line_length_equals_size_from_type : {v : Vect k Nat} -> (i : Fin k) -> (ll : Lines v) -> 
                                     length (index i ll) = index i v
@@ -51,3 +62,15 @@ insertLine FZ s ls = s :: ls
 insertLine (FS y) s [] = absurd y
 insertLine (FS y) s (str :: ls) = str :: insertLine y s ls
 
+replaceChar : {size : Vect (S k) Nat} ->
+              (row : Fin (S k)) ->
+              (column : Maybe (Fin (index row size))) ->
+              Char ->
+              Lines size ->
+              Lines size
+replaceChar row Nothing c linez = linez
+replaceChar row (Just i) c linez =
+  replaceAt row (replaceAt' i $ index row linez) linez where
+    replaceAt' : Fin n -> SizedString n -> SizedString n
+    replaceAt' {n = Z} i _ = absurd i
+    replaceAt' {n = (S k)} i str = replaceAt i c str
