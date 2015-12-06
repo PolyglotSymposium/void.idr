@@ -75,3 +75,10 @@ insertLineAbove (Buffer' ls cursor) =
   let newLines = insertLine (weaken $ currentRowIndex cursor) empty ls
       newCursor = insertLine Z cursor
   in Buffer' newLines newCursor
+
+changeChar : Buffer size -> Char -> Buffer size
+changeChar (Buffer' linez cursor) c =
+  let row = currentRowIndex cursor
+      column = currentColumnIndex cursor
+  in Buffer' (replaceChar row column c linez) cursor
+
