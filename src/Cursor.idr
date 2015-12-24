@@ -1,104 +1,79 @@
 module Cursor
 
 import Data.Fin
-import Data.Vect
 
 import Movement
 
 %default total
 %access public
 
-private
-data ColumnCursor : Nat -> Type where
-  EmptyCursor : ColumnCursor Z
-  ColumnCursor' : Fin (S k) -> ColumnCursor (S k)
+record Cursor (bottomRow : Nat) where
+  constructor Cursor'
+  rowIndex : Fin (S bottomRow)
+  colIndex : Nat
+
+%name Cursor cursor
+
+zeroCursor : Cursor n
+zeroCursor = Cursor' FZ Z
+
+updateColIndex : (Nat -> Nat) -> Cursor n -> Cursor n
+updateColIndex update cursor = record { colIndex = update $ colIndex cursor } cursor
+
+natToNullableFin : Nat -> Maybe (Fin n)
+natToNullableFin {n = Z} _ = Nothing
+natToNullableFin {n = (S _)} k = Just $ fromMaybe last $ natToFin k _
+
+columnCursor : Cursor _ -> Maybe (Fin n)
+columnCursor (Cursor' _ colIndex) = natToNullableFin colIndex
 
 private
-zeroColumnCursor' : (n : Nat) -> ColumnCursor n
-zeroColumnCursor' Z = EmptyCursor
-zeroColumnCursor' (S k) = ColumnCursor' FZ
+moveByCharInLine : Move ByCharacter -> Nat -> Nat -> Nat
+moveByCharInLine movement Z colIndex = colIndex
+moveByCharInLine (Backward move) (S k) colIndex = minus colIndex move
+moveByCharInLine (Forward move) (S k) colIndex =
+  -- TODO need proofs of the correctness of this logic
+  if colIndex < S k
+  then
+    if colIndex + move < S k
+    then colIndex + move
+    else S k
+  else colIndex
+
+moving_within_empty_line_is_idempotent : moveByCharInLine move Z colIndex = colIndex
+moving_within_empty_line_is_idempotent = Refl
+
+-- TODO further proofs here once I understand how
+
+moveByChar : Move ByCharacter -> Nat -> Cursor n -> Cursor n
+moveByChar movement lineLength =
+  updateColIndex $ moveByCharInLine movement lineLength
 
 private
-rowCursorToNat : ColumnCursor n -> Nat
-rowCursorToNat EmptyCursor = Z
-rowCursorToNat (ColumnCursor' x) = finToNat x
+boundedSubtract : Fin (S k) -> Nat -> Fin (S k)
+boundedSubtract FZ _ = FZ
+boundedSubtract (FS x) Z = (FS x)
+boundedSubtract (FS x) (S k) = boundedSubtract (weaken x) k
 
 private
-rowCursorToMaybeFin : ColumnCursor n -> Maybe (Fin n)
-rowCursorToMaybeFin EmptyCursor = Nothing
-rowCursorToMaybeFin (ColumnCursor' x) = Just x
-
-abstract
-data Cursor : Vect (S lastRow) Nat -> Type where
-  Cursor' : {size : Vect (S lastRow) Nat} ->
-            (rowCursor : Fin (S lastRow)) ->
-            (colCursor : ColumnCursor (index rowCursor size)) ->
-            (prevColumn : Nat) ->
-            Cursor size
-
-emptyBufferCursor : Cursor [Z]
-emptyBufferCursor = Cursor' FZ EmptyCursor Z
-
-zeroColumnCursor : Cursor size
-zeroColumnCursor {size} = Cursor' FZ (zeroColumnCursor' $ index FZ size) Z
-
-currentRowIndex : {size : Vect (S lastRow) Nat} -> Cursor size -> Fin (S lastRow)
-currentRowIndex (Cursor' rowIndex _ _) = rowIndex
-
-columnsInLine : Cursor size -> Nat
-columnsInLine {size} cursor = index (currentRowIndex cursor) size
-
-currentColumnIndex : (b : Cursor size) -> Maybe (Fin (columnsInLine b))
-currentColumnIndex (Cursor' _ colCursor _) = rowCursorToMaybeFin colCursor
-
-private
-moveCursorBackward : Fin (S k) -> Nat -> Fin (S k)
-moveCursorBackward FZ _ = FZ
-moveCursorBackward (FS x) Z = (FS x)
-moveCursorBackward (FS x) (S k) = moveCursorBackward (weaken x) k
-
-private
-moveCursorForward : Fin (S k) -> Nat -> Fin (S k)
-moveCursorForward x Z = x
-moveCursorForward x (S k) =
+boundedAdd : Fin (S k) -> Nat -> Fin (S k)
+boundedAdd x Z = x
+boundedAdd x (S k) =
   case strengthen x of
        Left _ => x
-       Right x' => moveCursorForward (FS x') k
-
-private
-moveByCharInLine : ColumnCursor n -> Move ByCharacter -> ColumnCursor n 
-moveByCharInLine EmptyCursor y = EmptyCursor
-moveByCharInLine (ColumnCursor' x) (Backward k) = ColumnCursor' $ moveCursorBackward x k
-moveByCharInLine (ColumnCursor' x) (Forward k) = ColumnCursor' $ moveCursorForward x k
-
-moveByChar : Cursor v -> Move ByCharacter -> Cursor v
-moveByChar (Cursor' rowCursor columnCursor _) movement =
-  let newColCursor = moveByCharInLine columnCursor movement
-  in Cursor' rowCursor newColCursor (rowCursorToNat newColCursor)
-
-private
-adjustColumnIndex : Nat -> Fin (S n)
-adjustColumnIndex {n} prevColumn =
-  case natToFin prevColumn (S n) of
-       Nothing => last
-       Just x => x
-
-private
-adjustColumnCursor : Nat -> ColumnCursor n
-adjustColumnCursor {n = Z} _ = EmptyCursor
-adjustColumnCursor {n = (S j)} k = ColumnCursor' $ adjustColumnIndex k
+       Right x' => boundedAdd (FS x') k
 
 private
 moveRowCursorByLine : Fin (S n) -> Move ByLine -> Fin (S n)
 moveRowCursorByLine rowCursor (Backward k) =
-  moveCursorBackward rowCursor k
+  boundedSubtract rowCursor k
 moveRowCursorByLine rowCursor (Forward k) =
-  moveCursorForward rowCursor k
+  boundedAdd rowCursor k
 
 moveByLine : Cursor v -> Move ByLine -> Cursor v
-moveByLine (Cursor' rowCursor columnCursor prevColumn) movement =
+moveByLine (Cursor' rowCursor colIndex) movement =
   let newRowCursor = moveRowCursorByLine rowCursor movement
-  in Cursor' newRowCursor (adjustColumnCursor prevColumn) prevColumn
+  in Cursor' newRowCursor colIndex
 
 crimp : Fin (S (S n)) -> Fin (S n)
 crimp x =
@@ -106,14 +81,11 @@ crimp x =
        Left _ => last
        Right x' => x'
 
-deleteLine : {size : Vect (S (S k)) Nat} ->
-            (cursor : Cursor size) ->
-             Cursor (deleteAt (currentRowIndex cursor) size)
-deleteLine (Cursor' rowCursor columnCursor prevColumn) =
-  Cursor' (crimp rowCursor) (adjustColumnCursor prevColumn) prevColumn
+deleteLine : Cursor (S n) -> Cursor n
+deleteLine (Cursor' rowCursor colIndex) =
+  Cursor' (crimp rowCursor) colIndex
 
-insertLine : (n : Nat) -> (cursor : Cursor size) -> 
-             Cursor (insertAt (weaken (currentRowIndex cursor)) n size)
-insertLine n (Cursor' rowCursor columnCursor prevColumn) =
-  Cursor' (weaken rowCursor) (adjustColumnCursor prevColumn) prevColumn
+insertLineAbove : Cursor n -> Cursor (S n)
+insertLineAbove {n} (Cursor' rowCursor colIndex) =
+  Cursor' (weaken rowCursor) colIndex
 
