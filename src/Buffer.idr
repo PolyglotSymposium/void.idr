@@ -42,7 +42,7 @@ moveByChar (Buffer' lines cursor) movement =
 private
 moveByLine : Buffer v -> Move ByLine -> Buffer v
 moveByLine (Buffer' lines cursor) movement =
-  Buffer' lines (moveByLine cursor movement)
+  Buffer' lines (moveByLine movement cursor)
 
 move : Buffer v -> Move by -> Buffer v
 move {by = ByCharacter} = moveByChar

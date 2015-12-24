@@ -7,6 +7,12 @@ import Movement
 %default total
 %access public
 
+crimp : Fin (S (S n)) -> Fin (S n)
+crimp x =
+  case (strengthen x) of
+       Left _ => last
+       Right x' => x'
+
 record Cursor (bottomRow : Nat) where
   constructor Cursor'
   rowIndex : Fin (S bottomRow)
@@ -17,9 +23,15 @@ record Cursor (bottomRow : Nat) where
 zeroCursor : Cursor n
 zeroCursor = Cursor' FZ Z
 
+private
 updateColIndex : (Nat -> Nat) -> Cursor n -> Cursor n
 updateColIndex update cursor = record { colIndex = update $ colIndex cursor } cursor
 
+private
+updateRowIndex : (Fin (S n) -> Fin (S m)) -> Cursor n -> Cursor m
+updateRowIndex update (Cursor' rowIndex colIndex) = Cursor' (update rowIndex) colIndex
+
+private
 natToNullableFin : Nat -> Maybe (Fin n)
 natToNullableFin {n = Z} _ = Nothing
 natToNullableFin {n = (S _)} k = Just $ fromMaybe last $ natToFin k _
@@ -64,28 +76,19 @@ boundedAdd x (S k) =
        Right x' => boundedAdd (FS x') k
 
 private
-moveRowCursorByLine : Fin (S n) -> Move ByLine -> Fin (S n)
-moveRowCursorByLine rowCursor (Backward k) =
+moveRowCursorByLine : Move ByLine -> Fin (S n) -> Fin (S n)
+moveRowCursorByLine (Backward k) rowCursor =
   boundedSubtract rowCursor k
-moveRowCursorByLine rowCursor (Forward k) =
+moveRowCursorByLine (Forward k) rowCursor =
   boundedAdd rowCursor k
 
-moveByLine : Cursor v -> Move ByLine -> Cursor v
-moveByLine (Cursor' rowCursor colIndex) movement =
-  let newRowCursor = moveRowCursorByLine rowCursor movement
-  in Cursor' newRowCursor colIndex
-
-crimp : Fin (S (S n)) -> Fin (S n)
-crimp x =
-  case (strengthen x) of
-       Left _ => last
-       Right x' => x'
+moveByLine : Move ByLine -> Cursor v -> Cursor v
+moveByLine movement =
+  updateRowIndex $ moveRowCursorByLine movement
 
 deleteLine : Cursor (S n) -> Cursor n
-deleteLine (Cursor' rowCursor colIndex) =
-  Cursor' (crimp rowCursor) colIndex
+deleteLine = updateRowIndex crimp
 
 insertLineAbove : Cursor n -> Cursor (S n)
-insertLineAbove {n} (Cursor' rowCursor colIndex) =
-  Cursor' (weaken rowCursor) colIndex
+insertLineAbove = updateRowIndex weaken
 
