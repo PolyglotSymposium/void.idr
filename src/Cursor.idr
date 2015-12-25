@@ -7,11 +7,26 @@ import Movement
 %default total
 %access public
 
+private
 crimp : Fin (S (S n)) -> Fin (S n)
 crimp x =
   case (strengthen x) of
        Left _ => last
        Right x' => x'
+
+private
+boundedSubtract : Fin (S k) -> Nat -> Fin (S k)
+boundedSubtract FZ _ = FZ
+boundedSubtract (FS x) Z = (FS x)
+boundedSubtract (FS x) (S k) = boundedSubtract (weaken x) k
+
+private
+boundedAdd : Fin (S k) -> Nat -> Fin (S k)
+boundedAdd x Z = x
+boundedAdd x (S k) =
+  case strengthen x of
+       Left _ => x
+       Right x' => boundedAdd (FS x') k
 
 record Cursor (bottomRow : Nat) where
   constructor Cursor'
@@ -44,13 +59,9 @@ moveByCharInLine : Move ByCharacter -> Nat -> Nat -> Nat
 moveByCharInLine movement Z colIndex = colIndex
 moveByCharInLine (Backward move) (S k) colIndex = minus colIndex move
 moveByCharInLine (Forward move) (S k) colIndex =
-  -- TODO need proofs of the correctness of this logic
-  if colIndex < S k
-  then
-    if colIndex + move < S k
-    then colIndex + move
-    else S k
-  else colIndex
+  case natToFin colIndex (S k) of
+       Nothing => colIndex
+       Just fin => finToNat $ boundedAdd fin move
 
 moving_within_empty_line_is_idempotent : moveByCharInLine move Z colIndex = colIndex
 moving_within_empty_line_is_idempotent = Refl
@@ -60,20 +71,6 @@ moving_within_empty_line_is_idempotent = Refl
 moveByChar : Move ByCharacter -> Nat -> Cursor n -> Cursor n
 moveByChar movement lineLength =
   updateColIndex $ moveByCharInLine movement lineLength
-
-private
-boundedSubtract : Fin (S k) -> Nat -> Fin (S k)
-boundedSubtract FZ _ = FZ
-boundedSubtract (FS x) Z = (FS x)
-boundedSubtract (FS x) (S k) = boundedSubtract (weaken x) k
-
-private
-boundedAdd : Fin (S k) -> Nat -> Fin (S k)
-boundedAdd x Z = x
-boundedAdd x (S k) =
-  case strengthen x of
-       Left _ => x
-       Right x' => boundedAdd (FS x') k
 
 private
 moveRowCursorByLine : Move ByLine -> Fin (S n) -> Fin (S n)
