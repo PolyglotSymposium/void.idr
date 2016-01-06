@@ -49,4 +49,14 @@ replaceAt {n} i c (SizedString' _ str) =
       secondChunk = substr indexAfter size str
   in SizedString' size $ firstChunk ++ (strCons c $ secondChunk)
 
+(++) : SizedString n -> SizedString m -> SizedString (n + m)
+(SizedString' _ str1) ++ (SizedString' _ str2) = SizedString' _ $ str1 ++ str2
+
+insertAfter : SizedString n -> (idx : Maybe (Fin n)) -> SizedString m -> SizedString (n + m)
+insertAfter str1 Nothing str2 = str1 ++ str2
+insertAfter (SizedString' n str) (Just x) (SizedString' _ infixStr) =
+  let idx = S $ finToNat x
+      prefixStr = substr 0 idx str
+      postfixStr = substr idx n str
+  in SizedString' _ $ prefixStr ++ infixStr ++ postfixStr
 

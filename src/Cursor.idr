@@ -89,3 +89,7 @@ deleteLine = updateRowIndex crimp
 insertLineAbove : Cursor n -> Cursor (S n)
 insertLineAbove = updateRowIndex weaken
 
+-- TODO should actually truncate to end of line here
+insertAfter : Nat -> Cursor n -> Cursor n
+insertAfter n = updateColIndex (+ n)
+

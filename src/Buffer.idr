@@ -13,7 +13,7 @@ import Movement
 abstract
 data Buffer : Nat -> Type where
   Buffer' : .{size : Vect (S n) Nat} ->
-            (ls : Lines size) ->
+            (linez : Lines size) ->
             (cursor : Cursor n) ->
             Buffer n
 
@@ -52,14 +52,14 @@ charUnderCursor (Buffer' lines cursor) =
 
 deleteLine : Buffer n -> Buffer (pred n)
 deleteLine {n = Z} _ = emptyBuffer
-deleteLine {n = (S _)} (Buffer' ls cursor) =
-  let newLines = deleteLine (rowIndex cursor) ls
+deleteLine {n = (S _)} (Buffer' linez cursor) =
+  let newLines = deleteLine (rowIndex cursor) linez
       newCursor = deleteLine cursor
   in Buffer' newLines newCursor
 
 insertLineAbove : Buffer n -> Buffer (S n)
-insertLineAbove (Buffer' ls cursor) =
-  let newLines = insertLine (weaken $ rowIndex cursor) empty ls
+insertLineAbove (Buffer' linez cursor) =
+  let newLines = insertLine (weaken $ rowIndex cursor) empty linez
       newCursor = insertLineAbove cursor
   in Buffer' newLines newCursor
 
@@ -68,4 +68,10 @@ changeChar (Buffer' linez cursor) c =
   let row = rowIndex cursor
       column = columnCursor cursor
   in Buffer' (replaceChar row column c linez) cursor
+
+insertTextAfterCursor : Buffer n -> SizedString l -> Buffer n
+insertTextAfterCursor (Buffer' linez cursor) str =
+  let newLinez = insertAfter (rowIndex cursor) (columnCursor cursor) str linez
+      newCursor = insertAfter l cursor
+  in Buffer' newLinez newCursor
 

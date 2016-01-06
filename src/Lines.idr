@@ -27,6 +27,15 @@ replaceAt FZ     str (x::xs) = str :: xs
 replaceAt (FS i) str (x::[]) = absurd i
 replaceAt (FS i) str (x::(y :: z)) = x :: replaceAt i str (y :: z)
 
+replaceAndResizeAt : { size : Vect (S k) Nat } ->
+                     (i : Fin (S k)) ->
+                     SizedString n -> 
+                     Lines size ->
+                     Lines (replaceAt i n size)
+replaceAndResizeAt FZ     str (x::xs) = str :: xs
+replaceAndResizeAt (FS i) str (x::[]) = absurd i
+replaceAndResizeAt (FS i) str (x::(y :: z)) = x :: replaceAndResizeAt i str (y :: z)
+
 line_length_equals_size_from_type : {v : Vect k Nat} -> (i : Fin k) -> (ll : Lines v) -> 
                                     length (index i ll) = index i v
 line_length_equals_size_from_type FZ [] impossible
@@ -74,3 +83,20 @@ replaceChar row (Just i) c linez =
     replaceAt' : Fin n -> SizedString n -> SizedString n
     replaceAt' {n = Z} i _ = absurd i
     replaceAt' {n = (S k)} i str = replaceAt i c str
+
+InsertAfterType : (size : Vect (S k) Nat) ->
+                  (row : Fin (S k)) ->
+                  Nat ->
+                  Type
+InsertAfterType size row textLength =
+  Lines $ replaceAt row (index row size + textLength) size
+
+insertAfter : {size : Vect (S k) Nat} ->
+             (row : Fin (S k)) ->
+             (column : Maybe (Fin (index row size))) ->
+             SizedString l ->
+             Lines size ->
+             InsertAfterType size row l
+insertAfter row column str linez =
+  replaceAndResizeAt row (insertAfter (index row linez) column str) linez
+
