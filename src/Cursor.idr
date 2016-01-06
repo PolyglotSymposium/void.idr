@@ -93,3 +93,7 @@ insertLineAbove = updateRowIndex weaken
 insertAfter : Nat -> Cursor n -> Cursor n
 insertAfter n = updateColIndex (+ n)
 
+-- TODO should actually behave differently than insertAfter
+insertBefore : Nat -> Cursor n -> Cursor n
+insertBefore k = updateColIndex (+ n)
+

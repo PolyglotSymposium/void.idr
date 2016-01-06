@@ -100,3 +100,19 @@ insertAfter : {size : Vect (S k) Nat} ->
 insertAfter row column str linez =
   replaceAndResizeAt row (insertAfter (index row linez) column str) linez
 
+InsertBeforeType : (size : Vect (S k) Nat) ->
+                   (row : Fin (S k)) ->
+                   Nat ->
+                   Type
+InsertBeforeType size row textLength =
+  Lines $ replaceAt row (textLength + index row size) size
+
+insertBefore : {size : Vect (S k) Nat} ->
+             (row : Fin (S k)) ->
+             (column : Maybe (Fin (index row size))) ->
+             SizedString l ->
+             Lines size ->
+             InsertBeforeType size row l
+insertBefore row column str linez =
+  replaceAndResizeAt row (insertBefore (index row linez) column str) linez
+

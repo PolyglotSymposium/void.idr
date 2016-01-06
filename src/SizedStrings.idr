@@ -52,11 +52,22 @@ replaceAt {n} i c (SizedString' _ str) =
 (++) : SizedString n -> SizedString m -> SizedString (n + m)
 (SizedString' _ str1) ++ (SizedString' _ str2) = SizedString' _ $ str1 ++ str2
 
+private
+splitAt : Nat -> SizedString n -> (String, String)
+splitAt idx (SizedString' n str) =
+  (substr 0 idx str, substr idx n str)
+
 insertAfter : SizedString n -> (idx : Maybe (Fin n)) -> SizedString m -> SizedString (n + m)
 insertAfter str1 Nothing str2 = str1 ++ str2
-insertAfter (SizedString' n str) (Just x) (SizedString' _ infixStr) =
+insertAfter str (Just x) (SizedString' _ infixStr) =
   let idx = S $ finToNat x
-      prefixStr = substr 0 idx str
-      postfixStr = substr idx n str
-  in SizedString' _ $ prefixStr ++ infixStr ++ postfixStr
+      splitStr = splitAt idx str
+  in SizedString' _ $ (fst splitStr) ++ infixStr ++ (snd splitStr)
+
+insertBefore : SizedString n -> (idx : Maybe (Fin n)) -> SizedString m -> SizedString (m + n)
+insertBefore str1 Nothing str2 = str2 ++ str1
+insertBefore str (Just x) (SizedString' _ infixStr) =
+  let idx = finToNat x
+      splitStr = splitAt idx str
+  in SizedString' _ $ (fst splitStr) ++ infixStr ++ (snd splitStr)
 

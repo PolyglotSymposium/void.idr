@@ -75,3 +75,9 @@ insertTextAfterCursor (Buffer' linez cursor) str =
       newCursor = insertAfter l cursor
   in Buffer' newLinez newCursor
 
+insertTextBeforeCursor : Buffer n -> SizedString l -> Buffer n
+insertTextBeforeCursor (Buffer' linez cursor) str =
+  let newLinez = insertBefore (rowIndex cursor) (columnCursor cursor) str linez
+      newCursor = insertBefore l cursor
+  in Buffer' newLinez newCursor
+
