@@ -1,6 +1,7 @@
 module Cursor
 
 import Data.Fin
+import MaybeFin
 
 import Movement
 
@@ -47,11 +48,11 @@ updateRowIndex : (Fin (S n) -> Fin (S m)) -> Cursor n -> Cursor m
 updateRowIndex update (Cursor' rowIndex colIndex) = Cursor' (update rowIndex) colIndex
 
 private
-natToNullableFin : Nat -> Maybe (Fin n)
-natToNullableFin {n = Z} _ = Nothing
-natToNullableFin {n = (S _)} k = Just $ fromMaybe last $ natToFin k _
+natToNullableFin : Nat -> MaybeFin n
+natToNullableFin {n = Z} _ = NoFin
+natToNullableFin {n = (S _)} k = SomeFin $ fromMaybe last $ natToFin k _
 
-columnCursor : Cursor _ -> Maybe (Fin n)
+columnCursor : Cursor _ -> MaybeFin n
 columnCursor (Cursor' _ colIndex) = natToNullableFin colIndex
 
 private
@@ -96,4 +97,3 @@ insertAfter n = updateColIndex (+ n)
 -- TODO should actually behave differently than insertAfter
 insertBefore : Nat -> Cursor n -> Cursor n
 insertBefore k = updateColIndex (+ n)
-

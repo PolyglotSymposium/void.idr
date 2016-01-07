@@ -4,6 +4,7 @@ import Data.Fin
 import Data.Vect
 
 import SizedStrings
+import MaybeFin
 
 %default total
 %access public
@@ -73,16 +74,12 @@ insertLine (FS y) s (str :: ls) = str :: insertLine y s ls
 
 replaceChar : {size : Vect (S k) Nat} ->
               (row : Fin (S k)) ->
-              (column : Maybe (Fin (index row size))) ->
+              (column : MaybeFin (index row size)) ->
               Char ->
               Lines size ->
               Lines size
-replaceChar row Nothing c linez = linez
-replaceChar row (Just i) c linez =
-  replaceAt row (replaceAt' i $ index row linez) linez where
-    replaceAt' : Fin n -> SizedString n -> SizedString n
-    replaceAt' {n = Z} i _ = absurd i
-    replaceAt' {n = (S k)} i str = replaceAt i c str
+replaceChar row column c linez =
+  replaceAt row (maybeReplaceAt column c $ index row linez) linez
 
 InsertAfterType : (size : Vect (S k) Nat) ->
                   (row : Fin (S k)) ->
@@ -93,7 +90,7 @@ InsertAfterType size row textLength =
 
 insertAfter : {size : Vect (S k) Nat} ->
              (row : Fin (S k)) ->
-             (column : Maybe (Fin (index row size))) ->
+             (column : MaybeFin (index row size)) ->
              SizedString l ->
              Lines size ->
              InsertAfterType size row l
@@ -109,10 +106,31 @@ InsertBeforeType size row textLength =
 
 insertBefore : {size : Vect (S k) Nat} ->
              (row : Fin (S k)) ->
-             (column : Maybe (Fin (index row size))) ->
+             (column : MaybeFin (index row size)) ->
              SizedString l ->
              Lines size ->
              InsertBeforeType size row l
 insertBefore row column str linez =
   replaceAndResizeAt row (insertBefore (index row linez) column str) linez
+
+DeleteCharType : (size : Vect (S k) Nat) ->
+                 (row : Fin (S k)) ->
+                 Type
+DeleteCharType size row = Lines $ replaceAt row (Nat.pred $ index row size) size
+
+deleteChar : {size : Vect (S k) Nat} ->
+             (row : Fin (S k)) ->
+             (column : MaybeFin (index row size)) ->
+             Lines size ->
+             DeleteCharType size row
+deleteChar row column linez = 
+  replaceAndResizeAt row (deleteAt column $ index row linez) linez
+
+charAt : {size : Vect (S k) Nat} ->
+         (row : Fin (S k)) ->
+         (column : MaybeFin (index row size)) ->
+         Lines size ->
+         Maybe Char
+charAt row column linez =
+  maybeStrIndex (index row linez) column
 

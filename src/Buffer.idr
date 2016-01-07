@@ -6,6 +6,7 @@ import SizedStrings
 import Lines
 import Cursor
 import Movement
+import MaybeFin
 
 %default total
 %access public
@@ -45,10 +46,8 @@ move {by = ByCharacter} = moveByChar
 move {by = ByLine} = moveByLine
 
 charUnderCursor : Buffer n -> Maybe Char
-charUnderCursor (Buffer' lines cursor) =
-  let line = index (rowIndex cursor) lines
-      maybeColIndex = columnCursor cursor
-  in map (strIndex line) maybeColIndex
+charUnderCursor (Buffer' linez cursor) =
+  charAt (rowIndex cursor) (columnCursor cursor) linez
 
 deleteLine : Buffer n -> Buffer (pred n)
 deleteLine {n = Z} _ = emptyBuffer
@@ -66,8 +65,8 @@ insertLineAbove (Buffer' linez cursor) =
 changeChar : Buffer n -> Char -> Buffer n
 changeChar (Buffer' linez cursor) c =
   let row = rowIndex cursor
-      column = columnCursor cursor
-  in Buffer' (replaceChar row column c linez) cursor
+      maybeColumn = columnCursor cursor
+  in Buffer' (replaceChar row maybeColumn c linez) cursor
 
 insertTextAfterCursor : Buffer n -> SizedString l -> Buffer n
 insertTextAfterCursor (Buffer' linez cursor) str =
@@ -80,4 +79,9 @@ insertTextBeforeCursor (Buffer' linez cursor) str =
   let newLinez = insertBefore (rowIndex cursor) (columnCursor cursor) str linez
       newCursor = insertBefore l cursor
   in Buffer' newLinez newCursor
+
+deleteCharUnderCursor : Buffer n -> Buffer n
+deleteCharUnderCursor (Buffer' linez cursor) =
+  let newLinez = deleteChar (rowIndex cursor) (columnCursor cursor) linez
+  in Buffer' newLinez cursor
 
