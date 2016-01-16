@@ -56,7 +56,7 @@ replaceAt {n} i c (SizedString' _ str) =
 
 maybeReplaceAt : MaybeFin n -> Char -> SizedString n -> SizedString n
 maybeReplaceAt NoFin _ str = str
-maybeReplaceAt (SomeFin x) c str = replaceAt x c str
+maybeReplaceAt (SomeFin x) y str = replaceAt x c str
 
 (++) : SizedString n -> SizedString m -> SizedString (n + m)
 (SizedString' _ str1) ++ (SizedString' _ str2) = SizedString' _ $ str1 ++ str2
